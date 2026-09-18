@@ -1,0 +1,73 @@
+Read the entire project and manage the GitHub workflow professionally.
+
+GitHub repository:
+https://github.com/nikhila9876/JPMC_Final_Hackathon.git
+
+### Requirements
+
+1. Keep `main` as the stable production branch.
+
+2. Create separate feature branches for **every logical feature**, using clear names such as:
+
+   * `feature/auth`
+   * `feature/mongodb`
+   * `feature/brevo-otp`
+   * `feature/otp-verification`
+   * `feature/common-ui`
+   * `feature/notifications`
+   * `feature/recommendations`
+   * `feature/event-registration`
+   * `feature/ai-assistant`
+   * `feature/problem-solution`
+
+3. For each feature:
+
+   * Create the feature branch from the latest `main`.
+   * Implement only that feature.
+   * Make **many meaningful atomic commits** wherever the feature naturally has separate changes.
+   * Use clear commit messages such as:
+     `feat: add OTP generation`
+     `feat: integrate Brevo email service`
+     `fix: handle expired OTP`
+     `feat: add notification API`
+   * Push every feature branch to GitHub.
+
+4. Create a **Pull Request for every feature branch**:
+
+```text
+feature/<name> → main
+```
+
+5. Each PR must have:
+
+   * Clear feature title
+   * Short description
+   * Changes implemented
+   * Testing performed
+   * Any required environment variables
+
+6. After completing and testing a feature, merge its PR into `main`, then create the next feature branch from the updated `main`.
+
+7. Keep the Git history clean and understandable. Do not create meaningless/fake commits just to increase the commit count. Create as many commits as reasonably possible based on actual logical changes.
+
+8. Never commit:
+
+   * `.env`
+   * API keys
+   * passwords
+   * MongoDB credentials
+   * Brevo API keys
+   * JWT secrets
+
+9. Update `.gitignore` and create `.env.example` if necessary.
+
+10. At the end, provide a summary:
+
+```text
+Branch → Feature implemented
+Commits → Important commit messages
+PR → PR title/status
+Merge → Whether merged into main
+```
+
+Do not claim a push, PR, or merge succeeded unless it actually succeeds.

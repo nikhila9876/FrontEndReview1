@@ -1,0 +1,668 @@
+﻿# TASK: Fix and Upgrade Login/Register with MongoDB + Brevo OTP Verification
+
+Read the **entire existing Login/Register project** before making any changes.
+
+Do NOT delete or unnecessarily rewrite the existing authentication functionality. First understand the current frontend, backend, database configuration, User model, authentication flow, and environment variables.
+
+The goal is to make the Login/Register module completely functional and reliable so it can later be reused as the authentication foundation for my hackathon projects.
+
+---
+
+## 1. CHECK THE EXISTING PROJECT
+
+Inspect:
+
+* Frontend structure
+* Backend structure
+* package.json files
+* Existing Login page
+* Existing Register page
+* Existing User model
+* Existing authentication APIs
+* Existing JWT/session implementation
+* MongoDB configuration
+* `.env` configuration
+* Existing email/OTP code if present
+* Existing CORS configuration
+* Existing API service layer
+
+Do not create duplicate authentication systems.
+
+---
+
+# 2. MONGODB CONNECTION
+
+Verify whether the project is already configured to use MongoDB.
+
+If MongoDB is already configured:
+
+* Check the connection implementation.
+* Check the MongoDB URI.
+* Check database name.
+* Check connection error handling.
+* Check whether the User collection/model works correctly.
+
+If MongoDB is NOT correctly configured:
+
+Implement MongoDB connection using the project's existing backend architecture.
+
+Use an environment variable:
+
+```env
+MONGODB_URI=
+```
+
+Do NOT hardcode the MongoDB connection string.
+
+The backend should clearly log:
+
+```text
+MongoDB connected successfully
+```
+
+when the connection succeeds.
+
+If connection fails, provide a clear error such as:
+
+```text
+MongoDB connection failed
+```
+
+without exposing passwords, credentials, or sensitive information.
+
+---
+
+# 3. USER MODEL
+
+Verify/create the User model according to the existing project architecture.
+
+It should support at least:
+
+```text
+name
+email
+password
+isEmailVerified
+otp
+otpExpiresAt
+createdAt
+updatedAt
+```
+
+If OTP should not be stored as plain text, securely hash the OTP before storing it.
+
+Do not store unnecessary sensitive information.
+
+Add appropriate indexes/unique constraints for email.
+
+---
+
+# 4. BREVO EMAIL OTP VERIFICATION
+
+Implement email OTP verification using **Brevo**.
+
+IMPORTANT:
+
+Never put the Brevo API key in frontend code.
+
+Use backend environment variables:
+
+```env
+BREVO_API_KEY=
+BREVO_SENDER_EMAIL=
+BREVO_SENDER_NAME=
+```
+
+If the existing project uses different environment variable names, use a consistent naming convention and update `.env.example`.
+
+The API key must remain server-side.
+
+---
+
+# 5. REGISTRATION FLOW
+
+Implement this exact flow:
+
+```text
+User enters registration details
+              ↓
+Frontend validates form
+              ↓
+POST /api/auth/register
+              ↓
+Backend validates data
+              ↓
+Check MongoDB
+              ↓
+Check whether email already exists
+              ↓
+Create user / temporary registration
+              ↓
+Generate secure OTP
+              ↓
+Store OTP securely + expiration
+              ↓
+Send OTP through Brevo
+              ↓
+Show OTP verification page
+```
+
+Do NOT consider registration complete until email verification succeeds.
+
+---
+
+# 6. OTP VERIFICATION PAGE
+
+Create a clean OTP verification screen.
+
+Display:
+
+```text
+Verify Your Email
+
+We sent a verification code to:
+user@example.com
+
+[ _ ] [ _ ] [ _ ] [ _ ] [ _ ] [ _ ]
+
+Verify OTP
+
+Didn't receive the code?
+Resend OTP
+```
+
+The exact UI can match the existing project's design.
+
+Support:
+
+* OTP input
+* Verify button
+* Resend OTP
+* Countdown timer
+* Loading state
+* Error message
+* Success message
+
+Do not expose the OTP anywhere in the frontend console.
+
+---
+
+# 7. OTP API
+
+Create an endpoint similar to:
+
+```text
+POST /api/auth/verify-otp
+```
+
+Request:
+
+```json
+{
+  "email": "user@example.com",
+  "otp": "123456"
+}
+```
+
+The backend must verify:
+
+1. User exists.
+2. OTP exists.
+3. OTP has not expired.
+4. OTP matches.
+5. User is not already verified.
+
+If successful:
+
+```text
+isEmailVerified = true
+```
+
+Then invalidate/delete the OTP.
+
+Return a clean success response.
+
+---
+
+# 8. RESEND OTP
+
+Create:
+
+```text
+POST /api/auth/resend-otp
+```
+
+Implement:
+
+* Generate a new secure OTP.
+* Replace the old OTP.
+* Set a new expiration time.
+* Send the new OTP using Brevo.
+* Prevent excessive resend requests.
+
+Add a cooldown such as:
+
+```text
+Resend available in 30 seconds
+```
+
+Do not allow unlimited OTP requests.
+
+---
+
+# 9. OTP EXPIRATION
+
+OTP should expire after a configurable period.
+
+For example:
+
+```env
+OTP_EXPIRY_MINUTES=10
+```
+
+Do not hardcode this if it can reasonably be configured.
+
+If OTP expires:
+
+```text
+OTP expired.
+Please request a new OTP.
+```
+
+---
+
+# 10. LOGIN FLOW
+
+Login should check:
+
+```text
+Email exists?
+        ↓
+Password correct?
+        ↓
+Email verified?
+        ↓
+Generate JWT/session
+        ↓
+Login successful
+        ↓
+Redirect to Dashboard
+```
+
+If the email is not verified:
+
+```text
+Please verify your email before logging in.
+```
+
+Provide an option to resend the OTP.
+
+Do not allow unverified accounts to access protected application features.
+
+---
+
+# 11. JWT AUTHENTICATION
+
+If the existing project uses JWT:
+
+* Preserve the existing JWT architecture.
+* Verify tokens on protected backend routes.
+* Store the JWT safely according to the existing application architecture.
+* Do not put secrets in frontend source code.
+
+Use:
+
+```env
+JWT_SECRET=
+JWT_EXPIRES_IN=
+```
+
+Never hardcode the JWT secret.
+
+---
+
+# 12. AUTHENTICATION APIs
+
+Ensure the authentication API structure is clean.
+
+For example:
+
+```text
+POST /api/auth/register
+POST /api/auth/verify-otp
+POST /api/auth/resend-otp
+POST /api/auth/login
+POST /api/auth/logout
+GET  /api/auth/me
+```
+
+Adapt endpoint names if the project already has an established API structure.
+
+Do not create duplicate routes for the same functionality.
+
+---
+
+# 13. VALIDATION
+
+Registration should validate:
+
+```text
+Name
+Email
+Password
+Confirm Password
+```
+
+Password should have reasonable security requirements.
+
+Email should have valid email format.
+
+Prevent duplicate email registration.
+
+Example:
+
+```text
+Email already registered.
+```
+
+If the account exists but is unverified, allow the user to request a new OTP instead of creating another account.
+
+---
+
+# 14. SECURITY
+
+Implement sensible security practices:
+
+* Hash passwords using the existing secure password hashing library.
+* Never store plaintext passwords.
+* Never expose OTP in API responses.
+* Never expose Brevo API key.
+* Never expose MongoDB credentials.
+* Hash OTP before storing where practical.
+* Add OTP expiration.
+* Add resend cooldown.
+* Validate all user input.
+* Protect authentication endpoints against abuse where practical.
+* Do not log passwords, tokens, API keys, or OTPs.
+
+---
+
+# 15. BREVO EMAIL TEMPLATE
+
+Create a clean verification email.
+
+Example:
+
+```text
+Subject: Verify Your Email
+
+Hello {{name}},
+
+Thank you for registering.
+
+Your verification code is:
+
+123456
+
+This code will expire in 10 minutes.
+
+If you did not create this account, you can ignore this email.
+
+Thanks,
+{{applicationName}}
+```
+
+Use the Brevo API from the backend.
+
+Make the sender configurable through environment variables.
+
+---
+
+# 16. ERROR HANDLING
+
+Handle:
+
+```text
+MongoDB unavailable
+Brevo API failure
+Invalid OTP
+Expired OTP
+Email already registered
+Invalid email
+Weak password
+Incorrect password
+Unverified email
+Network error
+Server error
+```
+
+Frontend should display user-friendly messages.
+
+Never expose:
+
+```text
+MongoDB connection strings
+Brevo API keys
+Stack traces
+Internal server errors
+```
+
+---
+
+# 17. ENVIRONMENT FILE
+
+Create/update:
+
+```text
+.env.example
+```
+
+Include:
+
+```env
+PORT=5000
+
+MONGODB_URI=
+
+JWT_SECRET=
+JWT_EXPIRES_IN=7d
+
+BREVO_API_KEY=
+BREVO_SENDER_EMAIL=
+BREVO_SENDER_NAME=
+
+OTP_EXPIRY_MINUTES=10
+
+FRONTEND_URL=
+```
+
+Do NOT add real API keys.
+
+Ensure `.env` is included in `.gitignore`.
+
+---
+
+# 18. MONGODB CONNECTION TEST
+
+After implementation, actually test the MongoDB connection.
+
+Verify:
+
+```text
+Backend starts
+       ↓
+MongoDB connects
+       ↓
+User model works
+       ↓
+Register request reaches backend
+       ↓
+User is stored in MongoDB
+       ↓
+OTP is generated
+       ↓
+Brevo sends email
+       ↓
+OTP verification works
+       ↓
+User becomes verified
+       ↓
+Login works
+```
+
+Do not simply assume MongoDB is connected based on configuration files.
+
+---
+
+# 19. BREVO TEST
+
+Test the complete flow using a real test email configured in the environment.
+
+Verify:
+
+```text
+Registration
+      ↓
+OTP email received
+      ↓
+OTP entered
+      ↓
+OTP verified
+      ↓
+isEmailVerified = true
+      ↓
+Login succeeds
+```
+
+If Brevo fails, show a useful error without exposing the API response's sensitive information.
+
+---
+
+# 20. FRONTEND AUTH STATE
+
+After successful login:
+
+Store/update authentication state using the existing project architecture.
+
+The application should know:
+
+```text
+isAuthenticated
+currentUser
+userRole
+isEmailVerified
+```
+
+Do not rely only on frontend values for authorization.
+
+Backend must always verify authentication and authorization.
+
+---
+
+# 21. DO NOT IMPLEMENT THE OTHER COMMON COMPONENTS YET
+
+For this task, focus ONLY on making the following foundation reliable:
+
+```text
+Login
+Register
+MongoDB
+Brevo OTP
+Email verification
+JWT/session authentication
+Logout
+Current user
+Protected authentication foundation
+```
+
+After this works, we will add:
+
+```text
+Navbar
+Sidebar
+Footer
+Loading
+ErrorMessage
+Modal
+Button
+Input
+Card
+Table
+Toast/Notification
+ProtectedRoute
+Recommendation Engine
+Event Registration
+Email Notifications
+```
+
+---
+
+# 22. FINAL TEST CHECKLIST
+
+Before declaring the task complete, test:
+
+### Registration
+
+* [ ] Valid registration works.
+* [ ] User is stored in MongoDB.
+* [ ] Duplicate email is handled.
+* [ ] OTP is generated.
+* [ ] OTP email is sent through Brevo.
+
+### OTP
+
+* [ ] Correct OTP works.
+* [ ] Incorrect OTP fails.
+* [ ] Expired OTP fails.
+* [ ] Resend OTP works.
+* [ ] Resend cooldown works.
+* [ ] OTP is invalidated after successful verification.
+
+### Login
+
+* [ ] Verified user can login.
+* [ ] Wrong password fails.
+* [ ] Nonexistent email fails.
+* [ ] Unverified user cannot access protected features.
+* [ ] JWT/session works.
+
+### Security
+
+* [ ] Password is hashed.
+* [ ] OTP is not exposed.
+* [ ] JWT secret is not exposed.
+* [ ] Brevo API key is not exposed.
+* [ ] MongoDB credentials are not exposed.
+
+### Infrastructure
+
+* [ ] MongoDB connection succeeds.
+* [ ] Backend starts without errors.
+* [ ] Frontend starts without errors.
+* [ ] CORS works.
+* [ ] No major console errors.
+* [ ] No broken API requests.
+
+---
+
+# 23. FINAL RESPONSE AFTER IMPLEMENTATION
+
+After completing the implementation, report:
+
+1. MongoDB connection status.
+2. Brevo integration status.
+3. Authentication flow.
+4. OTP flow.
+5. APIs created/modified.
+6. Files created/modified.
+7. Required `.env` variables.
+8. Exact commands to start frontend and backend.
+9. Exact steps to test registration → OTP → login.
+10. Any remaining configuration that I need to perform manually.
+
+IMPORTANT:
+
+Do not claim MongoDB or Brevo is working unless you actually test the relevant connection/API flow.
+
+Keep the implementation modular because this authentication system will become the **common authentication foundation for my future hackathon projects**.
+
